@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfólio — Dinis Soares</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; font-family: 'Courier New', monospace; }
+  body { background: #1a1a1a; }
+
+  .filmstrip-wrapper {
+    width: 100vw; height: 100vh;
+    overflow-x: scroll; overflow-y: hidden;
+    cursor: grab; user-select: none;
+    scroll-snap-type: x mandatory;
+  }
+  .filmstrip-wrapper:active { cursor: grabbing; }
+  .filmstrip-wrapper::-webkit-scrollbar { height: 6px; }
+  .filmstrip-wrapper::-webkit-scrollbar-track { background: #222; }
+  .filmstrip-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+  .filmstrip {
+    display: inline-flex; flex-direction: column;
+    background: #1a1a1a; height: 100vh;
+    min-width: max-content;
+  }
+
+  .sprockets {
+    height: 56px; flex-shrink: 0;
+    overflow: visible; display: flex;
+    align-items: center; padding: 0 10px;
+    gap: 24px; background: #1a1a1a;
+  }
+
+  .frames-row {
+    display: flex; flex: 1;
+    align-items: stretch;
+    padding: 0 10px; gap: 10px;
+    overflow: hidden;
+  }
+
+  /* ── Frame base ── */
+  .frame {
+    flex-shrink: 0;
+    background: #fff;
+    position: relative; overflow: hidden;
+    scroll-snap-align: center;
+  }
+
+  /* All image frames — same width, ratio ~1.56:1 (matches the red rectangle) */
+  .frame-h,
+  .frame-dv {
+    width: calc((100vh - 112px) * 1.56);
+  }
+
+  /* Text / wide frame */
+  .frame-txt {
+    width: 92vw; min-width: 700px;
+  }
+
+  /* ── Inner layouts ── */
+  .frame-single {
+    position: absolute; inset: 18px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff;
+  }
+  .frame-single img {
+    max-width: 100%; max-height: 100%;
+    width: auto; height: auto;
+    object-fit: contain; display: block;
+  }
+
+  /* Dual: two images, equal width */
+  .frame-dual {
+    position: absolute; inset: 0;
+    display: flex; align-items: stretch;
+    gap: 0;
+    background: #fff;
+  }
+  .frame-dual img {
+    width: 50%; height: 100%;
+    object-fit: contain; display: block;
+    flex-shrink: 0;
+  }
+
+  /* Dual with a small gap like the PDF */
+  .frame-dual-gap {
+    position: absolute; inset: 12px;
+    display: flex; align-items: stretch;
+    gap: 12px;
+    background: #fff;
+  }
+  .frame-dual-gap img {
+    flex: 1; height: 100%;
+    object-fit: contain; display: block;
+    min-width: 0;
+  }
+
+  .frame-text {
+    position: absolute; inset: 0;
+    display: flex; align-items: center;
+    justify-content: center;
+    background: #fff; padding: 60px 120px;
+  }
+
+  .frame-label {
+    position: absolute; bottom: 18px; right: 20px;
+    font-size: 11px; color: #aaa;
+    letter-spacing: 1px; opacity: 0.5;
+    pointer-events: none; z-index: 2;
+  }
+
+  /* Popup */
+  #overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 199; opacity: 0;
+    pointer-events: none; transition: opacity 0.2s;
+  }
+  #overlay.visible { opacity: 1; pointer-events: all; }
+
+  #popup {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    background: #fff; max-width: 580px; width: 88vw;
+    padding: 40px 44px; z-index: 200;
+    font-family: Georgia, serif; color: #1a1a1a;
+    line-height: 1.8; font-size: 15px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    border: 2px solid #1a1a1a;
+  }
+  #popup.visible { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
+  #popup-close {
+    position: absolute; top: 14px; right: 18px;
+    background: none; border: none; font-size: 22px;
+    cursor: pointer; color: #888; font-family: sans-serif;
+  }
+  #popup-close:hover { color: #1a1a1a; }
+  #popup-category {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: #999; margin-bottom: 6px;
+    font-family: "Courier New", monospace;
+  }
+  #popup-title { font-size: 20px; font-weight: bold; margin-bottom: 14px; }
+  #popup-text { color: #333; }
+
+  /* Arrows */
+  .nav-arrow {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    z-index: 100; background: none; border: none;
+    cursor: pointer; padding: 20px 16px; opacity: 0.8;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .nav-arrow:hover { opacity: 1; }
+  .nav-arrow.left { left: 12px; display: none; }
+  .nav-arrow.right { right: 12px; }
+  .nav-arrow svg {
+    display: block; width: 52px; height: 80px;
+    stroke: #000; fill: none;
+    stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+  }
+</style>
+</head>
+<body>
+
+<div id="overlay"></div>
+<div id="popup">
+  <button id="popup-close">✕</button>
+  <div id="popup-category"></div>
+  <div id="popup-title"></div>
+  <div id="popup-text"></div>
+</div>
+
+<div class="filmstrip-wrapper" id="strip">
+  <div class="filmstrip" id="filmstrip">
+    <div class="sprockets" id="holes-top"></div>
+    <div class="frames-row">
+
+      <!-- 001: Apresentação (texto) -->
+      <div class="frame frame-txt">
+        <div class="frame-text">
+          <div style="max-width:820px;text-align:center;font-family:Georgia,serif;color:#1a1a1a;line-height:1.9;font-size:clamp(13px,1.4vw,18px);user-select:text;cursor:text;">
+            <p style="margin-bottom:1.6em;">O meu nome é Dinis Soares, tenho 21 anos e tirei uma licenciatura em Tecnologias Multimédia. Desde sempre que <strong>o cinema, a fotografia e tudo o que rodeia a produção audiovisual</strong> me fascinam e foi exatamente isso que me levou a seguir este caminho.</p>
+            <p style="margin-bottom:1.6em;">Ao longo dos últimos anos, fui construindo o meu percurso de forma prática, realizei vários estágios curriculares na área da multimédia, participei na cobertura de eventos como fotógrafo e editor e cheguei a liderar equipas de produção na minha universidade, cada projeto da qual fiz parte foi uma lição valiosa sobre a área.</p>
+            <p>Domino ferramentas da Adobe, tenho experiência em fotografia, captação e edição de vídeo, e estou sempre à procura de aprender mais, seja sobre <strong>cinematografia, narrativa visual ou produção de conteúdo.</strong></p>
+          </div>
+        </div>
+        <span class="frame-label">001</span>
+      </div>
+
+      <!-- 002: Vida de Palhaço — horizontal single -->
+      <div class="frame frame-h clickable"
+           data-category="Multimédia"
+           data-title="Vida de Palhaço"
+           data-desc="Um vídeo de 7 minutos feito em aula no contexto de artes performativas. A obra retrata a rotina de um homem que acorda todos os dias com maquilhagem de palhaço, um símbolo do disfarce emocional que carregamos na vida moderna, as cenas repetem-se propositadamente, transmitindo a sensação de um ciclo sem saída, até ao momento em que o protagonista rompe com tudo num grito num campo aberto.">
+        <div class="frame-single">
+          <img src="imagens/clown.png" alt="Vida de Palhaço">
+        </div>
+        <span class="frame-label">002</span>
+      </div>
+
+      <!-- 003: Floresta Animada — horizontal single -->
+      <div class="frame frame-h clickable"
+           data-category="Multimédia"
+           data-title="Floresta Animada"
+           data-desc="Uma fotografia tirada por mim e transformada numa animação curta de 10 segundos. Inspirada no pós-impressionismo, movimento do final do século XIX conhecido pelas suas pinceladas expressivas e cores vibrantes, a animação dá vida à imagem fazendo as pinceladas moverem-se subtilmente, criando a sensação de que o ambiente está vivo e em constante respiração, a meio caminho entre uma fotografia e um vídeo.">
+        <div class="frame-single">
+          <img src="imagens/floresta.png" alt="Floresta Animada">
+        </div>
+        <span class="frame-label">003</span>
+      </div>
+
+      <!-- 004: O Aparadinho — dual vertical (tabela + post) -->
+      <div class="frame frame-dv clickable"
+           data-category="Trabalhos Gráficos"
+           data-title="Identidade Visual e Publicidade — O Aparadinho"
+           data-desc="Dois exemplos dos trabalhos gráficos feitos para a barbearia O Aparadinho, com quem colaboro regularmente. À esquerda, uma tabela de preços apresentada em mockup para o cliente visualizar o resultado final impresso e, à direita, um exemplo das peças gráficas criadas mensalmente para a comunicação nas redes sociais da barbearia, mantendo sempre a identidade visual a preto e dourado que define a imagem do espaço.">
+        <div class="frame-dual-gap">
+          <img src="imagens/tabela_precos.png" alt="Tabela de Preços O Aparadinho">
+          <img src="imagens/aparadinho_post.png" alt="Post O Aparadinho">
+        </div>
+        <span class="frame-label">004</span>
+      </div>
+
+      <!-- 005: Icons Quinta Vale de Frades — horizontal single -->
+      <div class="frame frame-h clickable"
+           data-category="Trabalhos Gráficos"
+           data-title="Icons para a Quinta Vale de Frades"
+           data-desc="Conjunto de 5 ícones desenhados em estágio na Uiva - Agência de Comunicação, para os destaques do Instagram da Quinta Vale de Frades, um espaço de turismo rural rodeado de floresta privada, voltado para o contacto com a natureza e o descanso. Os ícones representam as categorias dos reels em destaque no perfil, e foram desenhados com um traço simples e orgânico que reflete a identidade tranquila e natural da quinta.">
+        <div class="frame-single">
+          <img src="imagens/icons_quinta.png" alt="Icons Quinta Vale de Frades">
+        </div>
+        <span class="frame-label">005</span>
+      </div>
+
+      <!-- 006: Vallée Duhamel + This is Pacifica — dual vertical -->
+      <div class="frame frame-dv clickable"
+           data-category="Trabalhos Gráficos"
+           data-title="Vallée Duhamel &amp; This is Pacifica"
+           data-desc="Dois posters desenvolvidos em aula com o objetivo de representar visualmente um artista usando como inspiração as suas obras e escolhas estéticas. O poster da Vallée Duhamel parte da identidade da dupla canadiana, que mistura produção cuidada com objetos feitos à mão, para criar uma composição surreal e colorida fiel ao seu estilo. O poster do This is Pacifica homenageia o estúdio portuense focado em branding e design gráfico, traduzindo a sua identidade numa composição minimalista onde a tipografia irregular e os padrões geométricos transmitem o seu caráter distinto e reconhecível.">
+        <div class="frame-dual-gap">
+          <img src="imagens/vallee_duhamel.png" alt="Poster Vallée Duhamel">
+          <img src="imagens/this_is_pacifica.png" alt="Poster This is Pacifica">
+        </div>
+        <span class="frame-label">006</span>
+      </div>
+
+      <!-- 007: Neville Brody + R2 Design — dual vertical -->
+      <div class="frame frame-dv clickable"
+           data-category="Trabalhos Gráficos"
+           data-title="Neville Brody &amp; R2 Design"
+           data-desc="O poster do Neville Brody parte da identidade do designer britânico, conhecido pela sua linguagem visual que mistura modernismo, punk e pós-modernismo, com influências de movimentos como o Dadaísmo, o Construtivismo e a Pop Art, traduzindo esse caos estruturado numa composição densa e gráfica, com recurso à fonte SamsungOne que ele próprio criou e à estética da sua colaboração com a Supreme. O poster do R2 Design homenageia o estúdio portuense, inspirando-se no trabalho que desenvolveram para o Museu da Cidade do Porto, onde criaram uma identidade visual dinâmica ligada às placas de rua históricas da cidade, traduzida aqui numa composição de linhas concêntricas que transmite movimento e transformação.">
+        <div class="frame-dual-gap">
+          <img src="imagens/neville_brody.png" alt="Poster Neville Brody">
+          <img src="imagens/r2_design.png" alt="Poster R2 Design">
+        </div>
+        <span class="frame-label">007</span>
+      </div>
+
+      <!-- 008: Torre + Flores — dual vertical -->
+      <div class="frame frame-dv clickable"
+           data-category="Fotografia"
+           data-title="Fotografias Pessoais"
+           data-desc="Duas fotografias tiradas em contexto pessoal, sem um objetivo concreto além do interesse pelo momento. A primeira explora a geometria de um poste de alta tensão visto de baixo para cima, criando uma composição onde o elemento industrial contrasta com o céu. A segunda foca-se num conjunto de flores, mexendo com a profundidade e os detalhes da natureza próxima.">
+        <div class="frame-dual-gap">
+          <img src="imagens/torre.png" alt="Torre de Alta Tensão">
+          <img src="imagens/flores.png" alt="Flores">
+        </div>
+        <span class="frame-label">008</span>
+      </div>
+
+      <!-- 009: Objeto metálico + Edifício — dual vertical -->
+      <div class="frame frame-dv clickable"
+           data-category="Fotografia"
+           data-title="Fotografias Pessoais"
+           data-desc="Duas fotografias tiradas em contexto pessoal. A primeira é um close-up de um objeto metálico sobre fundo neutro, onde o brilho e os reflexos da superfície se tornam o foco principal. A segunda é um edifício fotografado de baixo para cima, onde o céu azul intenso ocupa a maior parte do enquadramento e funciona como contraste ao elemento urbano.">
+        <div class="frame-dual-gap">
+          <img src="imagens/objeto.png" alt="Objeto metálico">
+          <img src="imagens/edificio.png" alt="Edifício">
+        </div>
+        <span class="frame-label">009</span>
+      </div>
+
+    </div>
+    <div class="sprockets" id="holes-bottom"></div>
+  </div>
+</div>
+
+<button class="nav-arrow left"  id="arrow-left">
+  <svg viewBox="0 0 52 80"><polyline points="40,6 12,40 40,74"/></svg>
+</button>
+<button class="nav-arrow right" id="arrow-right">
+  <svg viewBox="0 0 52 80"><polyline points="12,6 40,40 12,74"/></svg>
+</button>
+
+<script>
+  const wrapper   = document.getElementById('strip');
+  const filmstrip = document.getElementById('filmstrip');
+  const btnLeft   = document.getElementById('arrow-left');
+  const btnRight  = document.getElementById('arrow-right');
+  const overlay   = document.getElementById('overlay');
+  const popup     = document.getElementById('popup');
+
+  function makeHoles() {
+    const totalPx = filmstrip.scrollWidth;
+    const count = Math.ceil(totalPx / 42);
+    let html = '';
+    for (let i = 0; i < count; i++) {
+      html += '<div style="min-width:18px;width:18px;height:28px;background:#ffffff;border:1.5px solid #999;border-radius:4px;flex-shrink:0;"></div>';
+    }
+    ['holes-top','holes-bottom'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.width = totalPx + 'px';
+      el.innerHTML = html;
+    });
+  }
+  setTimeout(() => { makeHoles(); updateArrows(); }, 100);
+
+  function updateArrows() {
+    const max = wrapper.scrollWidth - wrapper.clientWidth;
+    btnLeft.style.display  = wrapper.scrollLeft > 10       ? 'block' : 'none';
+    btnRight.style.display = wrapper.scrollLeft < max - 10 ? 'block' : 'none';
+  }
+  wrapper.addEventListener('scroll', updateArrows);
+
+  btnLeft.addEventListener('click', () => {
+    btnLeft.style.transform = 'translateY(-50%) translateX(-14px)';
+    setTimeout(() => { btnLeft.style.transform = 'translateY(-50%)'; }, 150);
+    wrapper.scrollBy({ left: -(window.innerWidth * 0.92), behavior: 'smooth' });
+  });
+  btnRight.addEventListener('click', () => {
+    btnRight.style.transform = 'translateY(-50%) translateX(14px)';
+    setTimeout(() => { btnRight.style.transform = 'translateY(-50%)'; }, 150);
+    wrapper.scrollBy({ left: window.innerWidth * 0.92, behavior: 'smooth' });
+  });
+
+  function closePopup() {
+    popup.classList.remove('visible');
+    overlay.classList.remove('visible');
+  }
+  document.getElementById('popup-close').addEventListener('click', closePopup);
+  overlay.addEventListener('click', closePopup);
+
+  let didDrag = false;
+  document.querySelectorAll('.frame.clickable').forEach(frame => {
+    frame.style.cursor = 'pointer';
+    frame.addEventListener('click', () => {
+      if (didDrag) return;
+      document.getElementById('popup-category').textContent = frame.dataset.category || '';
+      document.getElementById('popup-title').innerHTML      = frame.dataset.title    || '';
+      document.getElementById('popup-text').textContent     = frame.dataset.desc     || '';
+      popup.classList.add('visible');
+      overlay.classList.add('visible');
+    });
+  });
+
+  let drag = false, dragX = 0, dragScroll = 0;
+  wrapper.addEventListener('mousedown', e => {
+    drag = true; didDrag = false;
+    dragX = e.clientX; dragScroll = wrapper.scrollLeft;
+    wrapper.style.scrollSnapType = 'none';
+    wrapper.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if (!drag) return;
+    if (Math.abs(e.clientX - dragX) > 4) didDrag = true;
+    wrapper.scrollLeft = dragScroll - (e.clientX - dragX);
+  });
+  window.addEventListener('mouseup', () => {
+    if (!drag) return;
+    drag = false;
+    wrapper.style.cursor = 'grab';
+    setTimeout(() => { wrapper.style.scrollSnapType = 'x mandatory'; }, 80);
+  });
+  wrapper.addEventListener('wheel', e => {
+    e.preventDefault();
+    wrapper.scrollLeft += e.deltaY;
+  }, { passive: false });
+</script>
+</body>
+</html>
