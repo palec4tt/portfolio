@@ -171,6 +171,7 @@
   <div id="popup-category"></div>
   <div id="popup-title"></div>
   <div id="popup-text"></div>
+  <a id="popup-link" href="#" target="_blank" style="display:none;margin-top:18px;display:none;align-items:center;gap:8px;color:#c00;font-family:'Courier New',monospace;font-size:13px;letter-spacing:1px;text-decoration:none;border:1.5px solid #c00;padding:8px 16px;width:fit-content;">▶ Ver no YouTube</a>
 </div>
 
 <div class="filmstrip-wrapper" id="strip">
@@ -194,7 +195,8 @@
       <div class="frame frame-h clickable"
            data-category="Multimédia"
            data-title="Vida de Palhaço"
-           data-desc="Um vídeo de 7 minutos feito em aula no contexto de artes performativas. A obra retrata a rotina de um homem que acorda todos os dias com maquilhagem de palhaço, um símbolo do disfarce emocional que carregamos na vida moderna, as cenas repetem-se propositadamente, transmitindo a sensação de um ciclo sem saída, até ao momento em que o protagonista rompe com tudo num grito num campo aberto.">
+           data-desc="Um vídeo de 7 minutos feito em aula no contexto de artes performativas. A obra retrata a rotina de um homem que acorda todos os dias com maquilhagem de palhaço, um símbolo do disfarce emocional que carregamos na vida moderna, as cenas repetem-se propositadamente, transmitindo a sensação de um ciclo sem saída, até ao momento em que o protagonista rompe com tudo num grito num campo aberto."
+           data-link="https://www.youtube.com/watch?v=5Jv2QhrZixw">
         <div class="frame-single">
           <img src="imagens/clown.png" alt="Vida de Palhaço">
         </div>
@@ -205,7 +207,8 @@
       <div class="frame frame-h clickable"
            data-category="Multimédia"
            data-title="Floresta Animada"
-           data-desc="Uma fotografia tirada por mim e transformada numa animação curta de 10 segundos. Inspirada no pós-impressionismo, movimento do final do século XIX conhecido pelas suas pinceladas expressivas e cores vibrantes, a animação dá vida à imagem fazendo as pinceladas moverem-se subtilmente, criando a sensação de que o ambiente está vivo e em constante respiração, a meio caminho entre uma fotografia e um vídeo.">
+           data-desc="Uma fotografia tirada por mim e transformada numa animação curta de 10 segundos. Inspirada no pós-impressionismo, movimento do final do século XIX conhecido pelas suas pinceladas expressivas e cores vibrantes, a animação dá vida à imagem fazendo as pinceladas moverem-se subtilmente, criando a sensação de que o ambiente está vivo e em constante respiração, a meio caminho entre uma fotografia e um vídeo."
+           data-link="https://www.youtube.com/watch?v=CecBT0wgOC8">
         <div class="frame-single">
           <img src="imagens/floresta.png" alt="Floresta Animada">
         </div>
@@ -351,6 +354,13 @@
       document.getElementById('popup-category').textContent = frame.dataset.category || '';
       document.getElementById('popup-title').innerHTML      = frame.dataset.title    || '';
       document.getElementById('popup-text').textContent     = frame.dataset.desc     || '';
+      const linkEl = document.getElementById('popup-link');
+      if (frame.dataset.link) {
+        linkEl.href = frame.dataset.link;
+        linkEl.style.display = 'inline-flex';
+      } else {
+        linkEl.style.display = 'none';
+      }
       popup.classList.add('visible');
       overlay.classList.add('visible');
     });
